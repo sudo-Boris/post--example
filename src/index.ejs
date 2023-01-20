@@ -18,322 +18,321 @@
   </d-front-matter>
 
   <d-title>
-    <h1>Distill Example</h1>
-    <p>An example project using Webpack, Babel, and Svelte. </p>
+    <h1>Reward Constrained Proximal Policy Optimization</h1>
+    <p>Learning the perfect balance between constraint and reward.</p>
   </d-title>
 
   <d-article>
 
+    <d-abstract class="l-page-outset">
+      <p>
+        In this article, we demonstrate the implementation of Reward Constrained Policy Optimization
+        (RCPO)<d-cite key="Tessler2018RCPO"></d-cite> into stable-baselines implementation of Proximal Policy
+        Optimization (PPO)<d-cite key="Schulman2017PPO"></d-cite>.
+        We show that RCPO can be used to learn the perfect balance between
+        constraint and reward, and that it can be used to learn a policy that is robust to the constraint.
+      </p>
+    </d-abstract>
+
+    <div class="l-screen horizontal-line"></div>
+
+    <d-contents id="toc">
+      <div class="toc-wrapper">
+        <nav class="figcaption" id="menu">
+          <h4>Contents</h4>
+          <div><a href="./#What-are-CMDPs">What are Constrained MDPs</a></div>
+          <div><a href="./#CPO">Constrained Policy Optimization</a></div>
+          <div><a href="./#RCPO">Reward Constrained Policy Optimization</a></div>
+          <div><a href="./#Implementation">Implementation</a></div>
+          <div><a href="./#Experiments">Experiments</a></div>
+        </nav>
+        <div class="toc-line"></div>
+      </div>
+    </d-contents>
+
+    <h2 id="What-are-CMDPs">
+      What are Constrained MDPs?
+    </h2>
     <p>
-      Welcome to a Distill example article: meant to get you writing up your research quickly. Let's demo some
-      features:
+      In Reinforcement Learning (RL) the world is modeled as a Markov Decision Process (MDP) and the goal is to
+      optimize an objective <d-math>J^π</d-math>,
+      which is defined as the expected discounted reward to come:
     </p>
 
-    <h4>Hot reloading</h4>
-    <p>Your browser can automatically refresh when your editor saves. This should work by default, and you can disable
-      it in <code>index.js</code>. Sometimes hot reloading isn't fully compatible with all types of code, so you may
-      need to try manually reloading if you're seeing inconsistent behavior.</p>
-
-    <h4>Inlined SVGs</h4>
-    <p>SVGs are so small that it can be nice to save an extra request and simply inline them intop your HTML:</p>
-
-    <figure>
-      <%= require("../static/diagrams/diffparam.svg") %>
-    </figure>
-
-    <style>
-      #arrow-2 #arrow-head {
-        fill: steelblue;
-      }
-
-      #arrow-2 #arrow-line {
-        stroke: steelblue;
-      }
-    </style>
-
-    <p>Let's use some CSS to style an inlined SVG. Here's an arrow
-      <svg width="27px" height="9px" viewBox="0 0 27 9" version="1.1" xmlns="http://www.w3.org/2000/svg"
-        xmlns:xlink="http://www.w3.org/1999/xlink">
-        <g id="arrow" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-          <g id="Group" transform="translate(-0.195652, 0.0)">
-            <path d="M10.5,4.5 L26.8913043,4.5" id="arrow-line" stroke="#FF6600" stroke-width="2"
-              stroke-linecap="square" stroke-dasharray="6,4"></path>
-            <g id="arrow-head" transform="translate(5.0, 4.5) scale(-1, 1) translate(-5.0, -4.5) translate(0.5, 0.0)"
-              fill="#FF6600" fill-rule="nonzero">
-              <path
-                d="M4.5,0 C5.67007294,3.25202425 6.85281213,6.29180565 9,9 L4.5,7.3125 L0,9 C2.13530145,6.28972675 3.34126793,3.24998975 4.5,0 Z"
-                id="Shape" transform="translate(4.5, 4.5) rotate(-270.0) translate(-4.5, -4.5) "></path>
-            </g>
-          </g>
-        </g>
-      </svg> that we
-      can make
-      inline. If you'd like to change the color in CSS, we can do so. Let's put the second arrow (<span
-        id="arrow-2"><svg width="27px" height="9px" viewBox="0 0 27 9" version="1.1" xmlns="http://www.w3.org/2000/svg"
-          xmlns:xlink="http://www.w3.org/1999/xlink">
-          <g id="arrow" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-            <g id="Group" transform="translate(-0.195652, 0.0)">
-              <path d="M10.5,4.5 L26.8913043,4.5" id="arrow-line" stroke="#FF6600" stroke-width="2"
-                stroke-linecap="square" stroke-dasharray="6,4"></path>
-              <g id="arrow-head" transform="translate(5.0, 4.5) scale(-1, 1) translate(-5.0, -4.5) translate(0.5, 0.0)"
-                fill="#FF6600" fill-rule="nonzero">
-                <path
-                  d="M4.5,0 C5.67007294,3.25202425 6.85281213,6.29180565 9,9 L4.5,7.3125 L0,9 C2.13530145,6.28972675 3.34126793,3.24998975 4.5,0 Z"
-                  id="Shape" transform="translate(4.5, 4.5) rotate(-270.0) translate(-4.5, -4.5) "></path>
-              </g>
-            </g>
-          </g>
-        </svg></span>) in a tag with an ID, so we can
-      target it in CSS.
-
-      <d-code block="" language="css">
-        #arrow-2 #arrow-head {
-        fill: steelblue;
-        }
-
-        #arrow-2 #arrow-line {
-        stroke: steelblue;
-        }
-      </d-code>
-
-    </p>
-
-    <h4>Formulas</h4>
-
-    <p>Here's a test of an inline equation <d-math>c = a^2 + b^2</d-math>. Can also be used with configurable katex
-      settings, for example by
-      using inline <code>$</code> signs: <d-math>x^2</d-math>. There are also block equations:</p>
-    <d-math block="">
-      c = \pm \sqrt{ \sum_{i=0}^{n}{a^{222} + b^2}}
-    </d-math>
-    <p>Math can also be quite involved:</p>
-    <d-math block="">
-      \frac{1}{\Bigl(\sqrt{\phi \sqrt{5}}-\phi\Bigr) e^{\frac25 \pi}} = 1+\frac{e^{-2\pi}} {1+\frac{e^{-4\pi}}
-      {1+\frac{e^{-6\pi}} {1+\frac{e^{-8\pi}} {1+\cdots} } } }
+    <d-math>
+      J^π = \mathbb{E}_{s\sim\mu} \left[ \sum_{t=0}^T \gamma^t r(s_t, a_t) \right]
     </d-math>
 
-    <p>We've also been experimenting with <a
-        href="https://github.com/distillpub/template/wiki/Annotated-Formulas">annotated formulas</a>:</p>
-
-    <style>
-      .eq-grid {
-        display: grid;
-        justify-content: start;
-        grid-row-gap: 10px;
-      }
-
-      .eq-grid figcaption d-math {
-        font-size: 100%;
-      }
-
-      .eq-grid .expansion-marker {
-        border: 1px solid #CCC;
-        border-bottom: none;
-        height: .5em;
-        width: 100%;
-      }
-    </style>
-
-    <figure class="eq-grid">
-
-      <div style="grid-row: 1; grid-column: 1;">
-        <d-math> C ~~~=~~~~ </d-math>
-      </div>
-      <div style="grid-row: 1; grid-column: 2;">
-        <d-math> H^E_D(X, Z) </d-math>
-      </div>
-      <div style="grid-row: 1; grid-column: 3;">
-        <d-math> ~~~-~~~ </d-math>
-      </div>
-      <div style="grid-row: 1; grid-column: 4;">
-        <d-math> H^E_E(X, Z) </d-math>
-      </div>
-
-
-      <div class="expansion-marker" style="grid-row: 2; grid-column: 4 / 7; "></div>
-
-      <div style="grid-row: 3; grid-column: 1;">
-        <d-math> ~~~~~~~=~~~~ </d-math>
-      </div>
-      <div style="grid-row: 3; grid-column: 2;">
-        <d-math> H^E_D(X, Z) </d-math>
-      </div>
-      <div style="grid-row: 3; grid-column: 3;">
-        <d-math> ~~~-~~~ </d-math>
-      </div>
-      <div style="grid-row: 3; grid-column: 4;">
-        <d-math> H^E_E(Z | X) </d-math>
-      </div>
-      <div style="grid-row: 3; grid-column: 5;">
-        <d-math> ~~~-~~~ </d-math>
-      </div>
-      <div style="grid-row: 3; grid-column: 6;">
-        <d-math> H^E_E(X) </d-math>
-      </div>
-
-      <figcaption style="grid-row: 4; grid-column: 4; max-width:135px;">
-        Bits to represent <d-math>z</d-math><br> if you already know <d-math>x</d-math>.
-      </figcaption>
-      <figcaption style="grid-row: 4; grid-column: 6; max-width:120px;">
-        Bits to represent<br>
-        <d-math>x</d-math> by itself.
-      </figcaption>
-
-    </figure>
-
-    <h4>Citations</h4>
-
-    <p>We can<d-cite key="mercier2011humans"></d-cite> also cite <d-cite
-        key="gregor2015draw,mercier2011humans,openai2018charter"></d-cite> external publications. <d-cite
-        key="dong2014image,dumoulin2016guide,mordvintsev2015inceptionism"></d-cite>. We should also be testing
-      footnotes
-      <d-footnote id="d-footnote-1">This will become a hoverable footnote. This will become a hoverable footnote. This
-        will become a
-        hoverable footnote. This will become a hoverable footnote. This will become a hoverable footnote. This will
-        become a hoverable footnote. This will become a hoverable footnote. This will become a hoverable footnote.
-      </d-footnote>. There are multiple footnotes, and they appear in the appendix<d-footnote id="d-footnote-2">Given I
-        have coded them
-        right. Also, here's math in a footnote: <d-math>c = \sum_0^i{x}</d-math>. Also, a citation. Box-ception<d-cite
-          key="gregor2015draw"></d-cite>!</d-footnote> as well.</p>
-
-
-    <h4>Displaying code</h4>
-    <p>Some inline javascript:<d-code language="javascript">var x = 25;</d-code>. And here's a javascript code block.
+    <p>
+      where <d-math>\pi</d-math> is the policy, <d-math>\gamma</d-math> is the discount factor, and
+      <d-math>r(s_t,a_t)</d-math> is the reward function.
     </p>
-
-    <d-code block="" language="javascript">
-      var x = 25;
-      function(x){
-      return x * x;
-      }
-    </d-code>
-    <p>We also support some highlighting.</p>
-    <d-code block="" language="python">
-      # Python 3: Fibonacci series up to n
-      def fib(n):
-      a, b = 0, 1
-      while a &lt; n: print(a, end=' ' ) a, b=b, a+b </d-code>
-
-    <h4>Tables</h4>
-    <p>We have simple tables that try to stay readable at most screen sizes:
-    </p>
-
-    <style>
-      #example-table {
-        overflow-x: scroll;
-      }
-
-      #example-table th {
-        white-space: nowrap;
-      }
-
-      #example-table tbody th {
-        font-weight: initial;
-        border-bottom: 1px solid rgb(242, 242, 242);
-      }
-
-      #example-table tbody tr:last-of-type th {
-        border-bottom: inherit;
-      }
-
-      #example-table td,
-      #example-table thead th {
-        text-align: center;
-      }
-
-      #example-table td {
-        border-color: rgb(242, 242, 242);
-      }
-
-      #example-table td.no {
-        background-color: #f6f6f6;
-      }
-    </style>
-    <table id="example-table">
-      <thead>
-        <tr>
-          <th></th>
-          <th scope="col">Parallel</th>
-          <th scope="col">Efficient</th>
-          <th scope="col">Reversible</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <th scope="row">GANs</th>
-          <td>Yes</td>
-          <td>Yes</td>
-          <td class="no">No</td>
-        </tr>
-        <tr>
-          <th scope="row">Flow Models</th>
-          <td>Yes</td>
-          <td class="no">No</td>
-          <td>Yes</td>
-        </tr>
-        <tr>
-          <th scope="row">Autoregressive Models</th>
-          <td class="no">No</td>
-          <td>Yes</td>
-          <td>Yes</td>
-        </tr>
-      </tbody>
-    </table>
-
-    <h4>Interactive Figures</h4>
 
     <p>
-      Here's a dynamically instantiated "figure". We use Intersection Observers to allow loading resource-heavy
-      figures only when readers scroll close to them. The code for this is in <code>src/index.js</code>.
+      However, in many real-world applications, the objective is not only to maximize the reward, but also to satisfy
+      some constraints. For example, in robotics, the objective is to maximize the reward (e.g. the distance traveled)
+      while also satisfying the constraint (e.g. the robot should only apply a certain maximum amount
+      of torque to its joints).
     </p>
 
-    <d-figure id="svelte-example-dfigure">
+    <p>
+      Mathematically speaking, we introduce a new constraint objective and add new indices to differentiate
+      between the reward objective <d-math>J^π_R</d-math> and the new constrain objective <d-math>J^π_C</d-math>.
+      This objective generally is defined as the expected constraint value over N time steps
+      <d-math>J^π_C = \mathbb{E}_{s\sim\mu} \left[ C(s) \right]</d-math>.
+      The method of aggregating those individual constraint values over time can vary, e.g. using the average
+      or the maximum constraint value over N time steps or again a discounted sum.
+    </p>
+
+    <p>
+      Getting back to the example of the robot, the constraint objective could be defined as the average torque applied
+      to the joints over N time steps. The maximum amount of torque applied, so the upper bound of the constraint, is
+      given by the parameter <d-math>\alpha</d-math>.
+    </p>
+
+    <p>
+      The final objective is now to maximize <d-math>J^π_R</d-math> subject to the constraint <d-math>J^π_C \leq
+        \alpha</d-math>:
+    </p>
+
+    <d-math>
+      \max_{\pi \in \Pi} J^π_R \text{ s.t. }
+      J^π_C \leq \alpha
+    </d-math>
+
+    <h2 id="CPO">
+      Constrained Policy Optimization
+    </h2>
+    <p>
+      The problem of optimizing a constrained objective is known as Constrained Policy Optimization (CPO).
+      The most common approach to CPO is to use a Lagrangian multiplier <d-math>\lambda</d-math> to
+      enforce the constraint. With parameterized approaches such as Neural Networks the objective is then to
+      find the networks parameters <d-math>\theta</d-math> that maximize <d-math>J^π_R</d-math> subject to the
+      constraint
+      <d-math>J^π_C \leq \alpha</d-math> given the Lagrangian multiplier <d-math>\lambda</d-math>:
+    </p>
+    <d-math>
+      \max_{\theta} [J^{π_\theta}_R - \lambda (J^{π_\theta}_C - \alpha)]
+    </d-math>
+
+    <h3>
+      What does the lambda <i><b>actually</b></i> do?
+    </h3>
+    <p>
+      Intuitively, the Lagrangian multiplier <d-math>\lambda</d-math> is used to determine how much weight is put
+      onto the constraint. If <d-math>\lambda</d-math> is set to 0, the constraint is ignored and the objective
+      becomes the reward objective <d-math>J^π_R</d-math>. If <d-math>\lambda</d-math> is set very high, the
+      constraint is enforced very strictly and the global objective function reduces to the constraint objective
+      <d-math>J^π_C</d-math>.
+    </p>
+
+    <h4>
+      Demonstrating the effect of the Lagrangian multiplier
+    </h4>
+    <p>
+      Let's take a look at a simple example to demonstrate the effect of the Lagrangian multiplier.
+      We'll use the simple CartPole Gym environment. The reward in this environment is +1 for every step the pole was
+      kept upright.
+
+      We can now add an example constraint to the environment. Let's say we want to keep the cart in the left quarter of
+      the x-axis. We therefor define the constraint value to be the x-position of the cart and the upper bound
+      <d-math>\alpha</d-math> to be -2.
+
+    <p>
+      Try out the different Lambda values in the slider below to see how the constraint is enforced.
+    </p>
+
+    <d-figure id="tuning-lambda">
       <figure>
-        <div id="svelte-example-target"></div>
-        <figcaption>And a static figcaption. You can use citations<d-cite key="mercier2011humans"></d-cite> in this
-          figcaption, but not in text added by javascript.</figcaption>
+        <div id="tuning-lambda-target" class="video/mp4"></div>
+        <figcaption>
+          The lower the lambda, the more the constraint is ignored.
+          The higher the lambda, the more the constraint is enforced and the main reward objective is ignored.
+          At <d-math>\lambda = 1,000,000</d-math> the cart shoots to the right to tilt the pole to the left but does so
+          ignoring the following balancing act which is observable at <d-math>\lambda \in \{10, 100\}</d-math>.
+        </figcaption>
       </figure>
     </d-figure>
 
-    <p>You can't use citation tags (<code>d-cite</code>) in figures that are dynamically loaded using Javascript.
-      Distill statically
-      analyzes your submission for its citations, because they need to be uploaded to indexers and organizations like <a
-        href="https://www.crossref.org/">CrossRef</a> and <a href="https://scholar.google.com">Google Scholar</a>.</p>
+    <!-- For whatever reason this needs to be included otherwise the viz above won't appear -->
+    <d-figure id="svelte-example-dfigure">
+    </d-figure>
 
-    <p>That's it for the example article! Feel free to look at <a
-        href="https://github.com/distillpub?utf8=%E2%9C%93&q=post--&type=public">implementations
-        of existing Distill articles</a>, or ask for help in
-      the <a href="http://slack.distill.pub">Distill Slack Community</a>.</p>
-
-  </d-article>
-
-
-
-  <d-appendix>
-    <h3>Acknowledgments</h3>
+    <h4>
+      Setting the Lagrangian as a hyperparameter
+    </h4>
     <p>
-      We are deeply grateful to...
+      One can tune the Lagrangian as a hyperparameter (which is then called reward shaping), but ideally one would want
+      it to be learned itself to find the
+      perfect balance between optimizing <d-math>J^π_R</d-math> and <d-math>J^π_C</d-math>!
+      So the new and final objective is to find the networks parameters <d-math>\theta</d-math> that maximize
+      <d-math>J^π_R</d-math> subject to the constraint <d-math>J^π_C \leq \alpha</d-math> but also minimize
+      the Lagrangian multiplier <d-math>\lambda</d-math>:
+    </p>
+    <d-math>
+      \min_{\lambda \geq 0}\max_{\theta} [J^{π_\theta}_R - \lambda (J^{π_\theta}_C - \alpha)]
+    </d-math>
+
+    <h2 id="RCPO">
+      Reward Constrained Policy Optimization
+    </h2>
+    <p>
+      Over the last years there has been a rise in the use of Actor-Critice based approaches such as PPO.
+      The actor learns a policy π, whereas the critic learns the value using temporal difference learning.
+      Originally, the use of the critic was done to reduce the variance but it also enables
+      training using a finite number of samples.
+    </p>
+
+    <h3>
+      How to integrate the constraint into the Actor-Critic approach?
+    </h3>
+
+    <p>
+      One way to integrate the constraint into the Actor-Critic approach is using an alternative, guiding penalty
+      - the discounted penalty.
     </p>
 
     <p>
-      Many of our diagrams are based on...
+      The first step to integrate the constraint into the Actor-Critic approach is to use the
+      constraint objective <d-math>J^π_C</d-math> as the value function. This is simply done by reformulating it as the
+      expected discounted sum of the constraint values:
     </p>
 
-    <h3>Author Contributions</h3>
+    <d-math>
+      V^π_{C_\gamma}(s) \hat{=} \mathbb{E}^{\pi} \left[ \sum_{t=0}^{\infty} \gamma^t c(s_t, a_t) | s_0 = s \right]
+    </d-math>
+
     <p>
-      <b>Research:</b> Alex developed ...
+      Now we can simply include the constraint value to the reward function via the Lagrange multiplier:
+    </p>
+
+    <d-math>
+      \hat{r} = r(s,a) - \lambda c(s,a)
+    </d-math>
+
+    <p>
+      This is the guiding penalty. The constraint is now integrated into the reward function and the actor can learn
+      to maximize the reward while considering the constraint.
     </p>
 
     <p>
-      <b>Writing & Diagrams:</b> The text was initially drafted by...
+      Updating the Lagrangian multiplier is done via the derivative of the global objective:
     </p>
 
+    <d-math>
+      <d-math>\lambda</d-math> <d-math>\gets</d-math> max(<d-math>\lambda</d-math> -
+      lr_{<d-math>\lambda</d-math>}(\mathbb{E}^{\pi_\theta}_{s\sim\mu}
+      \left[C\right] - \alpha), 0)
+    </d-math>
+    <p>
+      <d-math>lr_\lambda</d-math> is the learning rate for the Lagrangian multiplier. The max function is
+      used to ensure
+      that the Lagrangian multiplier is always positive.
+    </p>
 
-    <d-footnote-list></d-footnote-list>
-    <d-citation-list></d-citation-list>
-  </d-appendix>
+    <h2 id="Implementation">
+      Implementation
+    </h2>
 
-  <!-- bibliography will be inlined during Distill pipeline's pre-rendering -->
-  <d-bibliography src="bibliography.bib"></d-bibliography>
+    <p>
+      We have decided to implement RCPO into the stable-baselines3<d-cite key="stable-baselines3"></d-cite> library.
+      This is a library that provides a stable version of PPO which we extend to develop RCPPO which can be found in
+      this <a href="https://github.com/sudo-Boris/stable-baselines3">sudo-Boris/stable-baselines3</a> github repo. We
+      additionally use the gym environment and need to return the constraint value.
+    </p>
+
+    <p>
+      The discussed integration of the constraint into the reward function is implemented in when computing the
+      advantages and returns.
+    </p>
+    <pre>delta = self.rewards[step] - self.constraint_lambda * self.constraints[step]
+      + self.gamma * next_values * next_non_terminal - self.values[step]
+    </pre>
+
+    <p>
+      Evidently, it is also necessary to add a buffer for the constraint values. Moreover, providing those constraint
+      values is done by customizing the gym environments to return the constraint values in the <d-math>info</d-math>
+      dictionary.
+    </p>
+
+    <p>
+      Due to the fact, that PPO (i) collects multiple episodes until the buffers are full and (ii) supports vectorized
+      environments the logic for collecting and aggregating the constraint values across the episodes and parallel
+      environments is a bit more complex. Nevertheless, we have chosen the aggregation method to be the average over all
+      time steps in an episode and across all episodes themselves.
+    </p>
+
+    <h2 id="Experiments">
+      Experiments
+    </h2>
+
+    <h2 id="Discussion">
+      Discussion
+    </h2>
+
+    <p>
+      To be able to reproduce the results in the paper we had to deviate from it in some aspects.
+    </p>
+
+    <h3>
+      Parameter updating frequency
+    </h3>
+
+    <p>
+      In our implementation, we only update the weights and the Lagrangian multiplier once after several episode
+      instead of after every episode as in the paper. This is due to the implementation design of the buffers in
+      stable-baselines3. As mentioned, those need to be filled before the update can be performed, i.e. there will most
+      likely be multiple episodes in on buffer.
+    </p>
+
+    <h3>
+      Deviating hyperparameters
+    </h3>
+
+    <p>
+      Furthermore, we had to select higher values for the Lagrangian multiplier itself when performing
+      reward shaping and its respective learning rate when training it as a parameter, so that it can grow quicker. <br>
+      Nevertheless, because the Lagrangian needs to be so much larger, we also had to train 3x longer (3,000,000 steps
+      instead of 1,000,000 steps) to achieve comparable results.
+      <br>
+      <br>
+      In addition to the frequency of updating the parameters, a reason for the slower impact of the constraint could be
+      attributed to the clipping of the trust region. This is a technique to ensure that the policy does not change too
+      much between updates and run the risk of landing in a bad local minimum it can not escape from. This is done by
+      clipping the policy update to a certain range. Therefore, even with "high" values of lambda w.r.t. the original
+      paper the policy will not change significantly to conform to the constraint.
+
+    </p>
+
+    <p>
+      - Can reproduce results, but need higher lambda
+      - Might be because of Trust region clipping etc. -> Thus, slower/ weaker updating of policy and enforcing of
+      constraint
+      - To combat this, we set the learning rate for the Lagrangian a lot higher
+    </p>
+
+    <d-appendix>
+      <h3>Acknowledgments</h3>
+      <p>
+        We are deeply grateful to Rong Guo for providing us with the opportunity to work on this project and for her
+        guidance and support.
+      </p>
+
+      <h3>Author Contributions</h3>
+      <p>
+        <b>Research:</b> Boris and Tuan developed the code. Boris did the experiments to reproduce the results.
+      </p>
+
+      <p>
+        <b>Writing & Visualizations:</b> Boris created the visualizations and wrote the blog post.
+      </p>
+
+
+      <d-footnote-list></d-footnote-list>
+      <d-citation-list></d-citation-list>
+    </d-appendix>
+
+    <!-- bibliography will be inlined during Distill pipeline's pre-rendering -->
+    <d-bibliography src="bibliography.bib"></d-bibliography>
 
 </body>
