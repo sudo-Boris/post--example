@@ -242,7 +242,7 @@
     </p>
 
     <p>
-      The discussed integration of the constraint into the reward function is implemented in when computing the
+      The discussed integration of the constraint into the reward function is implemented into the computation of the
       advantages and returns.
     </p>
     <pre>delta = self.rewards[step] - self.constraint_lambda * self.constraints[step]
@@ -266,23 +266,112 @@
       Experiments
     </h2>
 
+    <p>
+      Tessler C. et al.<d-cite key="Tessler2018RCPO"></d-cite> have performed their experiments on a custom marse rover
+      environment but also on the <a href="https://gymnasium.farama.org/environments/mujoco/">OpenAI MuJoCo Gym</a>
+      environments. We have decided to focus on the HalfCheetah MuJoCo environment as it produces the most stable
+      results. <br>
+      In the Mujoco environments each robot is composed of n joints. At each step the agent selects the amount of torque
+      that is applied to each if its joints and the goal is to move the robot forward as long as possible. To prolong
+      the robots motor life we want to constrain it from using high torque values while still enabling the robot to
+      perform the task at hand. <br>
+      To accomplish this we define the constraint C as the average torque applied to each motor, and the per-state
+      penalty c(s, a) is the torque applied at each time step.
+    </p>
+
+    <p>
+      In the paper the researchers compare their RCPO algorithm to the reward shaping approach using PPO. In
+      the latter case, a PPO simulation with a fixed penalty coefficient is used for each <d-math>\lambda</d-math>
+      value. <br>
+      We on the other hand implemented the RCPO approach into (RC)PPO directly and trained the policy and lambda on the
+      HalfCheetah environment. The reward shaping approach in our case simply meant to set the <d-math>\lambda</d-math>
+      value to a fixed value and train the policy on it from the start. <br>
+    </p>
+
+    <p>
+      The results of the experiments are shown in the following figures. We kept (almost) all hyperparameters the
+      same as well as in the original paper and let the agents train for <d-math>1,000,000</d-math> time-steps.
+    </p>
+
+    <!-- Insert two images side by side -->
+
+    <d-figure id="experiments_reward">
+      <figure>
+        <img src="images/experiments_reward.png" alt="Rewards">
+        <figcaption>
+          Rewards of the experiments on the HalfCheetah environment.
+        </figcaption>
+      </figure>
+    </d-figure>
+
+    <d-figure id="experiments_constraints">
+      <figure>
+        <img src="images/experiments_constraints.png" alt="Constraints">
+        <figcaption>
+          Average constraint results of the experiments on the HalfCheetah environment. The dashed line represents the
+          maximal allowed constraint value.
+        </figcaption>
+      </figure>
+    </d-figure>
+
+    <p>
+      The results show that the RCPPO approach is able to learn a policy that is able to walk forward while
+      respecting the constraint. Furthermore, we not only achieve comparable results to the paper, but we even
+      outperform the results from their RCPO model. <br>
+      The results of the reward shaping approach are also comparable in terms of relative performance between the
+      different <d-math>\lambda</d-math> values. <d-math>\lambda = 0.00001</d-math> has a higher reward but also higher
+      average torque than <d-math>\lambda = 0</d-math>. <br>
+      For reference, the results of the RCPO approach are shown in the following figure.
+    </p>
+
+    <d-figure id="experiments_rcppo">
+      <figure>
+        <img src="images/Paper_Results.png" alt="RCPO_Results" style="display: inline-block;">
+        <figcaption>
+          Results from the original paper.
+        </figcaption>
+      </figure>
+    </d-figure>
+
+    <p>
+      Finally, we want to see if we can qualitatively observe the effect of the constraint on the policy. To do so, we
+      have recorded videos of the agents walking forward with different <d-math>\lambda</d-math> values. The videos can
+      be seen below.
+    </p>
+
+    <d-figure id="experiments">
+      <figure>
+        <div id="experiments-target" class="video/mp4"></div>
+        <figcaption>
+          The lower the lambda, the more the constraint is ignored.
+          The higher the lambda, the more the constraint is enforced and the main reward objective is ignored.
+          At <d-math>\lambda = 100</d-math> the robot applies <d-math>0</d-math> torque to completely oblige to the
+          constraint ignoring the main objective to walk forward which is observable at <d-math>\lambda \in
+            \{"learned",
+            0, 1e-5, 1\}</d-math>.
+        </figcaption>
+      </figure>
+    </d-figure>
+
+    <!-- For whatever reason this needs to be included otherwise the viz above won't appear -->
+    <d-figure id="svelte-example-dfigure">
+    </d-figure>
+
     <h2 id="Discussion">
       Discussion
     </h2>
-
-    <p>
-      To be able to reproduce the results in the paper we had to deviate from it in some aspects.
-    </p>
 
     <h3>
       Parameter updating frequency
     </h3>
 
     <p>
+      To be able to reproduce the results in the paper we had to deviate from it in some aspects. <br><br>
       In our implementation, we only update the weights and the Lagrangian multiplier once after several episode
       instead of after every episode as in the paper. This is due to the implementation design of the buffers in
-      stable-baselines3. As mentioned, those need to be filled before the update can be performed, i.e. there will most
-      likely be multiple episodes in on buffer.
+      stable-baselines3. As mentioned, those need to be filled before the update can be performed, i.e. there will
+      most likely be multiple episodes in on buffer. On the other hand, we update the lambda parameter for n epochs,
+      just like the policy and value function.
     </p>
 
     <h3>
@@ -291,24 +380,38 @@
 
     <p>
       Furthermore, we had to select higher values for the Lagrangian multiplier itself when performing
-      reward shaping and its respective learning rate when training it as a parameter, so that it can grow quicker. <br>
-      Nevertheless, because the Lagrangian needs to be so much larger, we also had to train 3x longer (3,000,000 steps
-      instead of 1,000,000 steps) to achieve comparable results.
+      reward shaping, thus also having to increase its respective learning rate when training it as a parameter, so
+      that it can grow quicker. This leads to <d-math>lr_{\lambda}</d-math> being higher than
+      <d-math>lr_{\pi}</d-math> which ignores one of the assumption made in the paper, yet leads to coherent, and
+      better results!
+      <br>
+      E.g. in the paper a <d-math>\lambda</d-math> value of 0.1 is already very high as it leads to a reward of
+      <d-math>-0.4</d-math> and torque of <d-math>0.1387</d-math>, whereas in our case a <d-math>\lambda</d-math>
+      value
+      of 1.0 leads to a reward of about <d-math>2,400</d-math> with an average torque of <d-math>0.34</d-math>.
       <br>
       <br>
-      In addition to the frequency of updating the parameters, a reason for the slower impact of the constraint could be
-      attributed to the clipping of the trust region. This is a technique to ensure that the policy does not change too
-      much between updates and run the risk of landing in a bad local minimum it can not escape from. This is done by
-      clipping the policy update to a certain range. Therefore, even with "high" values of lambda w.r.t. the original
-      paper the policy will not change significantly to conform to the constraint.
+      In addition to the frequency of updating the parameters, a reason for the slower and weaker impact of the
+      constraint could be attributed to the clipping of the trust region. This is a technique to ensure that the
+      policy
+      does not change too much between updates and run the risk of landing in a bad local minimum it can not escape
+      from. This is done by clipping the policy update to a certain range. Therefore, even with "high" values of
+      lambda
+      w.r.t. the original paper the policy will not change significantly to conform to the constraint.
 
     </p>
 
+    <h3>
+      The Drawbacks of Reward Shaping
+    </h3>
+
     <p>
-      - Can reproduce results, but need higher lambda
-      - Might be because of Trust region clipping etc. -> Thus, slower/ weaker updating of policy and enforcing of
-      constraint
-      - To combat this, we set the learning rate for the Lagrangian a lot higher
+      Similar to the findings in the paper, we have also observed that the non-adaptive approach is prone to
+      converge
+      to
+      sub-optimal solutions. This is observable when comparing the results of different attempts of training the
+      policy
+      with the same fixed <d-math> \lambda</d-math> value, e.g. 2. The results are shown in the following figure.
     </p>
 
     <d-appendix>

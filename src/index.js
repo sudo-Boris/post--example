@@ -4,7 +4,7 @@ import * as _unused from "raw-loader!./index.ejs";
 
 import Example from "./diagrams/svelte-example.svelte";
 import Tuning_Lambda from "./diagrams/tuning_lambda.svelte"
-import Incremental from "./diagrams/incremental.svelte"
+import Experiments from "./diagrams/experiments.svelte"
 
 // lazily initialize any diagram below the fold. E.G:
 const exampleTag = document.getElementById("svelte-example-dfigure");
@@ -19,4 +19,11 @@ let tuning_lambda;
 Tuning_Lambda_Tag.addEventListener("ready", () => {
 	const target = Tuning_Lambda_Tag.querySelector("#tuning-lambda-target");
 	tuning_lambda = new Tuning_Lambda({ target });
+});
+
+const Experiments_Tag = document.getElementById("experiments");
+let experiments;
+Experiments_Tag.addEventListener("ready", () => {
+	const target = Experiments_Tag.querySelector("#experiments-target");
+	experiments = new Experiments({ target });
 });
