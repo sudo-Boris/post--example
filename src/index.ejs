@@ -18,19 +18,26 @@
   </d-front-matter>
 
   <d-title>
-    <h1>Reward Constrained Proximal Policy Optimization</h1>
-    <p>Learning the perfect balance between constraint and reward.</p>
+    <h1>Adaptive Reward Shaping in Safe Reinforcement Learning</h1>
+    <p>Reward Constrained Proximal Policy Optimization</p>
   </d-title>
 
   <d-article>
 
     <d-abstract class="l-page-outset">
       <p>
-        In this article, we demonstrate the implementation of Reward Constrained Policy Optimization
-        (RCPO)<d-cite key="Tessler2018RCPO"></d-cite> into stable-baselines implementation of Proximal Policy
+        In this blog, we dive into the ICLR 2019 paper "Reward Constrained Policy Optimization" by Tessler et al.
+        and highlight the importance of adaptive reward shaping in safe reinforcement learning.
+
+        We reproduce the paper's experimental results by implementing Reward Constrained Policy Optimization
+        (RCPO)<d-cite key="Tessler2018RCPO"></d-cite> into Proximal Policy
         Optimization (PPO)<d-cite key="Schulman2017PPO"></d-cite>.
-        We show that RCPO can be used to learn the perfect balance between
-        constraint and reward, and that it can be used to learn a policy that is robust to the constraint.
+
+        The goal of this blog is to provide researchers and practitioners with (1) a better understanding of
+        safe reinforcement learning in terms of
+        <a href="http://www.mit.edu/~dimitrib/Constrained-Opt.pdf"><b>constrained optimization</b></a>
+        , and (2) how reward shaping
+        can be effectively used to train a robust policy.
       </p>
     </d-abstract>
 
@@ -40,6 +47,8 @@
       <div class="toc-wrapper">
         <nav class="figcaption" id="menu">
           <h4>Contents</h4>
+          Introduction to Safe Reinforcement Learning
+          <div><a href="./#Safe-RL">Introduction to Safe Reinforcement Learning</a></div>
           <div><a href="./#What-are-CMDPs">What are Constrained MDPs</a></div>
           <div><a href="./#CPO">Constrained Policy Optimization</a></div>
           <div><a href="./#RCPO">Reward Constrained Policy Optimization</a></div>
@@ -49,6 +58,45 @@
         <div class="toc-line"></div>
       </div>
     </d-contents>
+
+    <h2 id="Safe-RL">
+      Introduction to Safe Reinforcement Learning
+    </h2>
+
+      <p>
+        Safe RL can be defined as the process of learning policies that maximize the expectation
+        of the return in problems in which it is important to ensure reasonable system performance
+        and/or respect safety constraints during the learning and/or the deployment processes <d-cite key="garcia_comprehensive_2015"></d-cite>.
+      </p>
+       <p>
+         <b>Some other recent ICLR papers on Safe Reinforcement Learning:</b>
+<br>
+      <a href="https://openreview.net/pdf?id=HJgEMpVFwB">
+              Adversarial Policies: Attacking Deep Reinforcement Learning</a>,
+          Adam Gleave, Michael Dennis, Cody Wild, Neel Kant, Sergey Levine, and Stuart Russell, <i>ICLR 2020</i>
+<br>
+      <a href="https://arxiv.org/pdf/2201.09802.pdf">
+            Constrained Policy Optimization via Bayesian World Models</a>,
+          Yarden As, Ilnura Usmanova, Sebastian Curi and Andreas Krause, <i>ICLR 2022</i>
+<br>
+      <a href="https://openreview.net/pdf?id=TBIzh9b5eaz">
+            Risk-averse Offline Reinforcement Learning</a>,
+          Núria Armengol Urpí, Sebastian Curi, and Andreas Krause, <i>ICLR 2021</i>
+<br>
+      <a href="https://openreview.net/pdf?id=S1vuO-bCW">
+          Leave No Trace: Learning to Reset for Safe and Autonomous Reinforcement Learning</a>,
+          Benjamin Eysenbach, Shixiang Gu, Julian Ibarz, and Sergey Levine, <i>ICLR 2018</i>
+<br>
+      <a href="https://openreview.net/pdf?id=iaO86DUuKi">
+          Conservative Safety Critics for Exploration</a>,
+          Homanga Bharadhwaj, Aviral Kumar, Nicholas Rhinehart, Sergey Levine, Florian Shkurti, and Animesh Garg, <i>ICLR 2021</i>
+<br>
+      <a href="https://openreview.net/pdf?id=TQt98Ya7UMP">
+          Balancing Constraints and Rewards with Meta-gradient D4PG</a>,
+          Dan A. Calian, Daniel J. Mankowitz, Tom Zahavy, Zhongwen Xu, Junhyuk Oh, Nir Levine, and Timothy Mann, <i>ICLR 2021</i>
+<br>
+      </p>
+    </h2>
 
     <h2 id="What-are-CMDPs">
       What are Constrained MDPs?
@@ -412,18 +460,9 @@
 
     <d-appendix>
       <h3>Acknowledgments</h3>
-      <p>
-        We are deeply grateful to Rong Guo for providing us with the opportunity to work on this project and for her
-        guidance and support.
-      </p>
-
-      <h3>Author Contributions</h3>
-      <p>
-        <b>Research:</b> Boris and Tuan developed the code. Boris did the experiments to reproduce the results.
-      </p>
 
       <p>
-        <b>Writing & Visualizations:</b> Boris created the visualizations and wrote the blog post.
+        We thank .... Funding (@Prof. Obermayer)
       </p>
 
 
