@@ -15,7 +15,7 @@
 
 <div style="display: flex; flex-direction: column; align-items: center;">
     <img
-        src="videos/lambda_{count}_ts_100000.mov"
+        src="videos/lambda_{count}_ts_100000.mp4"
         alt="Interactive plot displaying the effect of tuning the lambda parameter."
     />
     <div style="text-align:center;">

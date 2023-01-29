@@ -1,7 +1,7 @@
 <script>
-    const len = 5;
-    let allowedValues = ["learned", 1e-4, 10, 100, 10000, 1000000];
-    let count = "learned";
+    const len = 4;
+    let allowedValues = ["RCPPO", 0, 0.00001, 10, 100];
+    let count = "RCPPO";
     let hasInteracted = false;
     // function for updating count on input
     function input(x) {
