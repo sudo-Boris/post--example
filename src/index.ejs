@@ -18,7 +18,7 @@
   </d-front-matter>
 
   <d-title>
-    <h1>Adaptive Reward Shaping in Safe Reinforcement Learning</h1>
+    <h1>Adaptive Reward Penalty in Safe Reinforcement Learning</h1>
     <p>Reward Constrained Proximal Policy Optimization</p>
   </d-title>
 
@@ -36,7 +36,7 @@
         The goal of this blog is to provide researchers and practitioners with (1) a better understanding of
         safe reinforcement learning in terms of
         <a href="http://www.mit.edu/~dimitrib/Constrained-Opt.pdf"><b>constrained optimization</b></a>
-        , and (2) how reward shaping
+        , and (2) how penalized reward fucntions
         can be effectively used to train a robust policy.
       </p>
     </d-abstract>
@@ -82,16 +82,14 @@
     </div>
 
     <p>
-      Defining a reward function is a crucial step in the RL process and it is often based on the designers intuition of
-      the goal of the system. In the case of CoastRunners, it is to reach the finish line and collect points along the
+      Defining a reward function is crucial in <a href="https://lilianweng.github.io/posts/2018-02-19-rl-overview/"> Reinforcement Learning</a>
+      for solving many problems of interest in AI. It is often based on the designers' intuition of
+      the goal of the system. In the above expample of CoastRunners, the goal is to reach the finish line and collect points along the
       way. Whilst this is a reasonable reward function for the goal of winning the game, it allows for dangerous and
       harmful behavior as visible in the video above. The agent is able to drive off the track, crash into other boats,
       and catch fire and still win the game whilst achieving a score on average 20 percent higher than that achieved by
       human players. <br>
-      Safe RL aims to address this problem by ensuring that the agent does not violate safety constraints during the
-      training process. In this blog post we will discuss the technique of introducing a guiding penalty into the reward
-      function and learning the perfect balance between meeting the constraint whilst maximizing the goal. <br>
-      In the case of CoastRunners this constraint might be to stay on the track and not crash into other boats.
+
     </p>
 
 
@@ -101,7 +99,9 @@
     </d-figure> -->
 
     <p>
-      <b>Some other recent ICLR papers on Safe Reinforcement Learning:</b>
+      <b>How can we prevent the agents from violating safety constrains (e.g., crash into other boats)?<br></b>
+      Recent studies start to address the problem of safe reinforcement learning from various perspectives,
+      ICLR works including, but not limited to:
       <br>
       <a href="https://openreview.net/pdf?id=HJgEMpVFwB">
         Adversarial Policies: Attacking Deep Reinforcement Learning</a>,
@@ -130,17 +130,22 @@
         2021</i>
       <br>
     </p>
+
+    <p>
+      In this blog post we will discuss a simple but effective technique of introducing a guiding penalty into the reward
+      function. This method effectively trades off between meeting the constraint and achieving the goal. <br>
+    </p>
     </h2>
 
     <h2 id="What-are-CMDPs">
-      What are Constrained MDPs?
+      A Formalism for Safe Reinforcement Learning: Constrained MDPs
     </h2>
 
     <d-figure id="MDP">
       <figure>
         <img src="images/MDP.png" alt="Illustration of a Markov Decision Process">
         <figcaption>
-          Illustration of a Markov Decision Process (MDP). <br>
+          Illustration of a Constrained Markov Decision Process (MDP). <br>
           Based on an observation (also called state) from the environment, the agent selects an action. This action is
           performed in an environment results in a new state and a reward that evaluates the action. Given the new
           state the feedback loop repeats.
@@ -149,46 +154,41 @@
     </d-figure>
 
     <p>
-      In Reinforcement Learning (RL) the world is modeled as a Markov Decision Process (MDP) and the goal is to
-      optimize an objective <d-math>J^π</d-math>,
-      which is defined as the expected discounted reward to come:
-    </p>
+      In Reinforcement Learning, the world is modeled as a Markov Decision Process (MDP) and the goal is to
+      select a policy <d-math> \pi </d-math> which maximize an expected cumulative reward <d-math>J^π</d-math>.
 
+  <d-math>J^π</d-math> can be taken to be the infinite horizen discounted total return as
+      </p>
     <d-math>
       J^π = \mathbb{E}_{s\sim\mu} \left[ \sum_{t=0}^T \gamma^t r(s_t, a_t) \right]
     </d-math>
 
     <p>
-      where <d-math>\pi</d-math> is the policy, <d-math>\gamma</d-math> is the discount factor, and
+      where  <d-math>\gamma</d-math> is the discount factor, and
       <d-math>r(s_t,a_t)</d-math> is the reward function.
     </p>
 
     <p>
-      However, in many real-world applications, the objective is not only to maximize the reward, but also to satisfy
-      some constraints. For example, in robotics, the objective is to maximize the reward, e.g. the distance traveled,
-      while also satisfying the constraint that the robot should only apply a certain maximum amount
-      of torque to its joints.
-    </p>
-
-    <p>
-      Mathematically speaking, we introduce a new constraint objective and add new indices to differentiate
-      between the reward objective <d-math>J^π_R</d-math> and the new constrain objective <d-math>J^π_C</d-math>.
-      This objective generally is defined as the expected constraint value over N time steps
+      However, in many real-world applications, the agents must obey safety constrains while achieving the goal.
+      We can introduce a constraint objective analogous to the reward objective.
+      This objective is typically defined as the expected constraint value over N time steps
       <d-math>J^π_C = \mathbb{E}_{s\sim\mu} \left[ C(s) \right]</d-math>.
-      The method of aggregating those individual constraint values over time can vary, e.g. using the average
+      The method of aggregating individual constraints over time can vary, e.g. using the average
       or the maximum constraint value over N time steps or again a discounted sum.
     </p>
 
     <p>
-      Getting back to the example of the robot, the constraint objective could be defined as the average torque
-      applied
-      to the joints over N time steps. The maximum amount of torque applied, i.e. the upper bound of the constraint, is
-      given by the parameter <d-math>\alpha</d-math>.
+      In the example of the robot, the aim could be to prolong the motor life of the various robots,
+      while still enabling the robot to perform the task at hand. To do so, the robot motors need to be constrained
+      from using high torque values. This is accomplished by defining the constraint C as the average torque
+      the agent has applied to each motor, and the pertate penalty <d-math>c(s, a)</d-math>
+      becomes the amount of torque the agent decided to apply at each time step.
+
+      If we limit the allowable amount of torque applied to be <d-math>\alpha</d-math>.
     </p>
 
     <p>
-      The final objective is now to maximize <d-math>J^π_R</d-math> subject to the constraint <d-math>J^π_C \leq
-        \alpha</d-math>:
+      The cosntrained CMDP for our safe reinforcement learning problem is:
     </p>
 
     <d-math>
@@ -200,20 +200,20 @@
       Constrained Policy Optimization
     </h2>
     <p>
-      The problem of optimizing a constrained objective is known as Constrained Policy Optimization (CPO).
-      The most common approach to CPO is to use a Lagrangian multiplier <d-math>\lambda</d-math> to
-      enforce the constraint. With parameterized approaches such as Neural Networks the objective is then to
+      Constrained RLs are often solved using the Lagrange relaxation technique. With parameterized approaches such as Neural Networks the objective is then to
       find the networks parameters <d-math>\theta</d-math> that maximize <d-math>J^π_R</d-math> subject to the
       constraint
       <d-math>J^π_C \leq \alpha</d-math> given the Lagrangian multiplier <d-math>\lambda</d-math>:
     </p>
     <d-math>
-      \max_{\theta} [J^{π_\theta}_R - \lambda (J^{π_\theta}_C - \alpha)]
+      \min_{\lambda}\max_{\theta} [J^{π_\theta}_R - \lambda (J^{π_\theta}_C - \alpha)]
     </d-math>
 
+
     <h3>
-      What does the lambda <i><b>actually</b></i> do?
+      What What exactly does the <d-math>\lambda</d-math> <i><b> </b></i> do?
     </h3>
+
     <p>
       Intuitively, the Lagrangian multiplier <d-math>\lambda</d-math> is used to determine how much weight is put
       onto the constraint. If <d-math>\lambda</d-math> is set to 0, the constraint is ignored and the objective
@@ -222,11 +222,8 @@
       <d-math>J^π_C</d-math>.
     </p>
 
-    <h4>
-      Demonstrating the effect of the Lagrangian multiplier
-    </h4>
     <p>
-      Let's take a look at a simple example to demonstrate the effect of the Lagrangian multiplier.
+      Let's take a look at a simple example to <b>demonstrate the effect of the Lagrangian multiplier <d-math>\lambda</d-math> </b>.
       We'll use the simple CartPole Gym environment. The reward in this environment is +1 for every step the pole was
       kept upright.
 
@@ -252,28 +249,22 @@
       </figure>
     </d-figure>
 
-    <h4>
-      Reward Shaping: Setting the Lagrangian as a hyperparameter
-    </h4>
     <p>
-      One can tune the Lagrangian as a hyperparameter (which is then called reward shaping), but ideally one would
-      want
-      it to be learned itself to find the
-      perfect balance between optimizing <d-math>J^π_R</d-math> and <d-math>J^π_C</d-math>!
-      So the new and final objective is to find the networks parameters <d-math>\theta</d-math> that maximize
-      <d-math>J^π_R</d-math> subject to the constraint <d-math>J^π_C \leq \alpha</d-math> but also minimize
-      the Lagrangian multiplier <d-math>\lambda</d-math>:
+      Tuning the <d-math>\lambda</d-math> through <a href = "https://gibberblot.github.io/rl-notes/single-agent/reward-shaping.html">reward shaping </a> is no easy feat. <br>
+
+    <h3>
+      How can we learn an optimal <d-math>\lambda</d-math>?
+    </h3>
+
     </p>
-    <d-math>
-      \min_{\lambda \geq 0}\max_{\theta} [J^{π_\theta}_R - \lambda (J^{π_\theta}_C - \alpha)]
-    </d-math>
 
     <h2 id="RCPO">
       Reward Constrained Policy Optimization
     </h2>
     <p>
-      Over the last years there has been a rise in the use of Actor-Critice based approaches such as PPO.
-      The actor learns a policy π, whereas the critic learns the value using temporal difference learning.
+      Actor-Critic based approaches such as <a href ="https://spinningup.openai.com/en/latest/algorithms/ppo.html"
+      >PPO</a> has been shown empirically competitive with lots of quality benchmarks. In this kind of algorithms,
+      the actor learns a policy <d-math>lr_{\pi}</d-math>, whereas the critic learns the value using temporal difference learning.
       Originally, the use of the critic was done to reduce the variance but it also enables
       training using a finite number of samples.
     </p>
@@ -331,10 +322,7 @@
     </h2>
 
     <p>
-      We have decided to implement RCPO into the stable-baselines3<d-cite key="stable-baselines3"></d-cite> library.
-      This is a library that provides a stable version of PPO which we extend to develop RCPPO which can be found in
-      this <a href="https://github.com/sudo-Boris/stable-baselines3">sudo-Boris/stable-baselines3</a> github repo. We
-      additionally use the gym environment and need to return the constraint value.
+      To facilitate reproducibility, we integrated RCPO into the stable-baselines3<d-cite key="stable-baselines3"></d-cite> PPO implementation.
     </p>
 
     <h4>
@@ -342,8 +330,8 @@
     </h4>
 
     <p>
-      In PPO the computation of rewards (here called returns) the Temporal Difference Error (TD estimate) and
-      the Generalized Advantage Estimation (GAE) advantage are necessary. <br>
+      In PPO the computation of returns, we use Temporal Difference Error (TD estimate) and
+      the Generalized Advantage Estimation (GAE) advantage. <br>
       To integrate the constraint into the reward function, we need to add the Lagrangian-scaled constraint value to
       the reward as discussed in the <a href="./#RCPO">RCPO section</a>. This is done when computing the TD error
       estimate.
@@ -362,8 +350,7 @@
 
 
     <p>
-      Evidently, it is also necessary to add a buffer for the constraint values. Moreover, providing those constraint
-      values is done by customizing the gym environments to return the constraint values in the <d-math>info</d-math>
+      We customized the gym environments to return the constraint values in the <d-math>info</d-math>
       dictionary.
     </p>
 
@@ -395,27 +382,9 @@
     </h2>
 
     <p>
-      Tessler C. et al.<d-cite key="Tessler2018RCPO"></d-cite> have performed their experiments on a custom marse
-      rover
-      environment but also on the <a href="https://gymnasium.farama.org/environments/mujoco/">OpenAI MuJoCo Gym</a>
-      environments. We have decided to focus on the HalfCheetah MuJoCo environment as it produces the most stable
-      results. <br>
-      In the Mujoco environments each robot is composed of n joints. At each step the agent selects the amount of
-      torque
-      that is applied to each if its joints and the goal is to move the robot forward as long as possible. To prolong
-      the robots motor life we want to constrain it from using high torque values while still enabling the robot to
-      perform the task at hand. <br>
-      To accomplish this we define the constraint C as the average torque applied to each motor, and the per-state
-      penalty c(s, a) is the torque applied at each time step.
-    </p>
-
-    <p>
-      In the paper the researchers compare their RCPO algorithm to the reward shaping approach using PPO. In
-      the latter case, a PPO simulation with a fixed penalty coefficient is used for each <d-math>\lambda</d-math>
-      value. <br>
-      We on the other hand implemented the RCPO approach into PPO directly and trained the policy and lambda on
-      the HalfCheetah environment. The reward shaping approach in our case simply meant to set the
-      <d-math>\lambda</d-math> value to a fixed value and train the policy on it from the start. <br>
+      As a proof-of-the-principle experiment, we reproduced the HalfCheetah task in
+      <a href="https://gymnasium.farama.org/environments/mujoco/">OpenAI MuJoCo Gym</a>
+      from Tessler C. et al.<d-cite key="Tessler2018RCPO"></d-cite>.
     </p>
 
     <p>
@@ -435,14 +404,13 @@
     </d-figure>
 
     <p>
-      The results show that the RCPPO approach is able to learn a policy that is able to walk forward while
-      respecting the constraint. Furthermore, we not only achieve comparable results to the paper, but we even
-      outperform the results from their RCPO model. <br>
+      The results demonstrate that the RCPPO trained an agent that successfully walked forward while
+      respecting the safety constraint. We achieved comparable results to the original experiments in the paper. <br>
       Interestingly, low <d-math>\lambda</d-math> values seem to be less stable than high <d-math>\lambda</d-math>
       values. The guiding penalty appears to not only be enforcing the constraint but also improves the learning
-      process
-      overall. This might also be due to the fact that the Neural network architecture used in the paper is small
-      with its 2 layers of 64 hidden units instead of commonly used 256 hidden neurons. <br>
+      process overall.
+      This might be due to the fact that the neural network architecture used in the paper is relatively small
+      (i.e., 2 layers of 64 hidden units). <br>
     </p>
 
     <h4>
@@ -505,22 +473,16 @@
 
     <p>
       The results of the experiments show that the RCPO approach is able to learn a policy that is able to optimize
-      the
-      main reward objective while respecting the constraint. Furthermore, we not only achieve comparable results to
-      the
-      paper, but we even outperform the results from their RCPO model. <br>
-      The results of the reward shaping approach are also comparable in terms of relative performance between the
-      different <d-math>\lambda</d-math> values.<br>
+      the main reward objective while respecting the constraint.
     </p>
 
     <p>
       Safe Reinforcement Learning is a critical area of research in the field of artificial intelligence, as it has
       the potential to shape the future of autonomous systems in a multitude of domains, ranging from robotics to
       finance. <br>
-      The complexer systems become the more difficult it is to ensure that they are safe, especially through
+      The complexer systems become the more difficult it is to ensure safety requirements, especially through
       simple reward shaping. An approach such as RCPO can help to ensure that the safety constraints are respected
-      while
-      enforcing them by only providing the constraint itself. <br>
+      while enforcing them by only providing the constraint itself. <br>
     </p>
 
     <!-- <h3>
@@ -580,7 +542,7 @@
       <h3>Acknowledgments</h3>
 
       <p>
-        We thank .... Funding (@Prof. Obermayer)
+        We thank ....
       </p>
 
 
